@@ -79,39 +79,39 @@ type Exporter struct {
 }
 
 type KafkaOpts struct {
-	uri                      []string
-	useSASL                  bool
-	useSASLHandshake         bool
-	saslUsername             string
-	saslPassword             string
-	saslMechanism            string
-	saslDisablePAFXFast      bool
-	useTLS                   bool
-	tlsServerName            string
-	tlsCAFile                string
-	tlsCertFile              string
-	tlsKeyFile               string
-	serverUseTLS             bool
-	serverMutualAuthEnabled  bool
-	serverTlsCAFile          string
-	serverTlsCertFile        string
-	serverTlsKeyFile         string
-	tlsInsecureSkipTLSVerify bool
-	kafkaVersion             string
-	useZooKeeperLag          bool
-	uriZookeeper             []string
-	labels                   string
-	metadataRefreshInterval  string
-	serviceName              string
-	kerberosConfigPath       string
-	realm                    string
-	keyTabPath               string
-	kerberosAuthType         string
-	offsetShowAll            bool
-	topicWorkers             int
-	allowConcurrent          bool
-	allowAutoTopicCreation   bool
-	verbosityLogLevel        int
+	Uri                      []string
+	UseSASL                  bool
+	UseSASLHandshake         bool
+	SaslUsername             string
+	SaslPassword             string
+	SaslMechanism            string
+	SaslDisablePAFXFast      bool
+	UseTLS                   bool
+	TlsServerName            string
+	TlsCAFile                string
+	TlsCertFile              string
+	TlsKeyFile               string
+	ServerUseTLS             bool
+	ServerMutualAuthEnabled  bool
+	ServerTlsCAFile          string
+	ServerTlsCertFile        string
+	ServerTlsKeyFile         string
+	TlsInsecureSkipTLSVerify bool
+	KafkaVersion             string
+	UseZooKeeperLag          bool
+	UriZookeeper             []string
+	Labels                   string
+	MetadataRefreshInterval  string
+	ServiceName              string
+	KerberosConfigPath       string
+	Realm                    string
+	KeyTabPath               string
+	KerberosAuthType         string
+	OffsetShowAll            bool
+	TopicWorkers             int
+	AllowConcurrent          bool
+	AllowAutoTopicCreation   bool
+	VerbosityLogLevel        int
 }
 
 // CanReadCertAndKey returns true if the certificate and key files already exists,
@@ -153,16 +153,16 @@ func NewExporter(opts KafkaOpts, topicFilter string, groupFilter string) (*Expor
 	var zookeeperClient *kazoo.Kazoo
 	config := sarama.NewConfig()
 	config.ClientID = clientID
-	kafkaVersion, err := sarama.ParseKafkaVersion(opts.kafkaVersion)
+	kafkaVersion, err := sarama.ParseKafkaVersion(opts.KafkaVersion)
 	if err != nil {
 		return nil, err
 	}
 	config.Version = kafkaVersion
 
-	if opts.useSASL {
+	if opts.UseSASL {
 		// Convert to lowercase so that SHA512 and SHA256 is still valid
-		opts.saslMechanism = strings.ToLower(opts.saslMechanism)
-		switch opts.saslMechanism {
+		opts.SaslMechanism = strings.ToLower(opts.SaslMechanism)
+		switch opts.SaslMechanism {
 		case "scram-sha512":
 			config.Net.SASL.SCRAMClientGeneratorFunc = func() sarama.SCRAMClient { return &XDGSCRAMClient{HashGeneratorFcn: SHA512} }
 			config.Net.SASL.Mechanism = sarama.SASLMechanism(sarama.SASLTypeSCRAMSHA512)
@@ -171,63 +171,63 @@ func NewExporter(opts KafkaOpts, topicFilter string, groupFilter string) (*Expor
 			config.Net.SASL.Mechanism = sarama.SASLMechanism(sarama.SASLTypeSCRAMSHA256)
 		case "gssapi":
 			config.Net.SASL.Mechanism = sarama.SASLMechanism(sarama.SASLTypeGSSAPI)
-			config.Net.SASL.GSSAPI.ServiceName = opts.serviceName
-			config.Net.SASL.GSSAPI.KerberosConfigPath = opts.kerberosConfigPath
-			config.Net.SASL.GSSAPI.Realm = opts.realm
-			config.Net.SASL.GSSAPI.Username = opts.saslUsername
-			if opts.kerberosAuthType == "keytabAuth" {
+			config.Net.SASL.GSSAPI.ServiceName = opts.ServiceName
+			config.Net.SASL.GSSAPI.KerberosConfigPath = opts.KerberosConfigPath
+			config.Net.SASL.GSSAPI.Realm = opts.Realm
+			config.Net.SASL.GSSAPI.Username = opts.SaslUsername
+			if opts.KerberosAuthType == "keytabAuth" {
 				config.Net.SASL.GSSAPI.AuthType = sarama.KRB5_KEYTAB_AUTH
-				config.Net.SASL.GSSAPI.KeyTabPath = opts.keyTabPath
+				config.Net.SASL.GSSAPI.KeyTabPath = opts.KeyTabPath
 			} else {
 				config.Net.SASL.GSSAPI.AuthType = sarama.KRB5_USER_AUTH
-				config.Net.SASL.GSSAPI.Password = opts.saslPassword
+				config.Net.SASL.GSSAPI.Password = opts.SaslPassword
 			}
-			if opts.saslDisablePAFXFast {
+			if opts.SaslDisablePAFXFast {
 				config.Net.SASL.GSSAPI.DisablePAFXFAST = true
 			}
 		case "plain":
 		default:
 			return nil, fmt.Errorf(
 				`invalid sasl mechanism "%s": can only be "scram-sha256", "scram-sha512", "gssapi" or "plain"`,
-				opts.saslMechanism,
+				opts.SaslMechanism,
 			)
 		}
 
 		config.Net.SASL.Enable = true
-		config.Net.SASL.Handshake = opts.useSASLHandshake
+		config.Net.SASL.Handshake = opts.UseSASLHandshake
 
-		if opts.saslUsername != "" {
-			config.Net.SASL.User = opts.saslUsername
+		if opts.SaslUsername != "" {
+			config.Net.SASL.User = opts.SaslUsername
 		}
 
-		if opts.saslPassword != "" {
-			config.Net.SASL.Password = opts.saslPassword
+		if opts.SaslPassword != "" {
+			config.Net.SASL.Password = opts.SaslPassword
 		}
 	}
 
-	if opts.useTLS {
+	if opts.UseTLS {
 		config.Net.TLS.Enable = true
 
 		config.Net.TLS.Config = &tls.Config{
-			ServerName:         opts.tlsServerName,
+			ServerName:         opts.TlsServerName,
 			RootCAs:            x509.NewCertPool(),
-			InsecureSkipVerify: opts.tlsInsecureSkipTLSVerify,
+			InsecureSkipVerify: opts.TlsInsecureSkipTLSVerify,
 		}
 
-		if opts.tlsCAFile != "" {
-			if ca, err := ioutil.ReadFile(opts.tlsCAFile); err == nil {
+		if opts.TlsCAFile != "" {
+			if ca, err := ioutil.ReadFile(opts.TlsCAFile); err == nil {
 				config.Net.TLS.Config.RootCAs.AppendCertsFromPEM(ca)
 			} else {
 				return nil, err
 			}
 		}
 
-		canReadCertAndKey, err := CanReadCertAndKey(opts.tlsCertFile, opts.tlsKeyFile)
+		canReadCertAndKey, err := CanReadCertAndKey(opts.TlsCertFile, opts.TlsKeyFile)
 		if err != nil {
 			return nil, errors.Wrap(err, "error reading cert and key")
 		}
 		if canReadCertAndKey {
-			cert, err := tls.LoadX509KeyPair(opts.tlsCertFile, opts.tlsKeyFile)
+			cert, err := tls.LoadX509KeyPair(opts.TlsCertFile, opts.TlsKeyFile)
 			if err == nil {
 				config.Net.TLS.Config.Certificates = []tls.Certificate{cert}
 			} else {
@@ -236,24 +236,24 @@ func NewExporter(opts KafkaOpts, topicFilter string, groupFilter string) (*Expor
 		}
 	}
 
-	if opts.useZooKeeperLag {
+	if opts.UseZooKeeperLag {
 		klog.V(DEBUG).Infoln("Using zookeeper lag, so connecting to zookeeper")
-		zookeeperClient, err = kazoo.NewKazoo(opts.uriZookeeper, nil)
+		zookeeperClient, err = kazoo.NewKazoo(opts.UriZookeeper, nil)
 		if err != nil {
 			return nil, errors.Wrap(err, "error connecting to zookeeper")
 		}
 	}
 
-	interval, err := time.ParseDuration(opts.metadataRefreshInterval)
+	interval, err := time.ParseDuration(opts.MetadataRefreshInterval)
 	if err != nil {
 		return nil, errors.Wrap(err, "Cannot parse metadata refresh interval")
 	}
 
 	config.Metadata.RefreshFrequency = interval
 
-	config.Metadata.AllowAutoTopicCreation = opts.allowAutoTopicCreation
+	config.Metadata.AllowAutoTopicCreation = opts.AllowAutoTopicCreation
 
-	client, err := sarama.NewClient(opts.uri, config)
+	client, err := sarama.NewClient(opts.Uri, config)
 
 	if err != nil {
 		return nil, errors.Wrap(err, "Error Init Kafka Client")
@@ -265,13 +265,13 @@ func NewExporter(opts KafkaOpts, topicFilter string, groupFilter string) (*Expor
 		client:                  client,
 		topicFilter:             regexp.MustCompile(topicFilter),
 		groupFilter:             regexp.MustCompile(groupFilter),
-		useZooKeeperLag:         opts.useZooKeeperLag,
+		useZooKeeperLag:         opts.UseZooKeeperLag,
 		zookeeperClient:         zookeeperClient,
 		nextMetadataRefresh:     time.Now(),
 		metadataRefreshInterval: interval,
-		offsetShowAll:           opts.offsetShowAll,
-		topicWorkers:            opts.topicWorkers,
-		allowConcurrent:         opts.allowConcurrent,
+		offsetShowAll:           opts.OffsetShowAll,
+		topicWorkers:            opts.TopicWorkers,
+		allowConcurrent:         opts.AllowConcurrent,
 		sgMutex:                 sync.Mutex{},
 		sgWaitCh:                nil,
 		sgChans:                 []chan<- prometheus.Metric{},
@@ -715,39 +715,39 @@ func main() {
 		opts = KafkaOpts{}
 	)
 
-	toFlagStringsVar("kafka.server", "Address (host:port) of Kafka server.", "kafka:9092", &opts.uri)
-	toFlagBoolVar("sasl.enabled", "Connect using SASL/PLAIN, default is false.", false, "false", &opts.useSASL)
-	toFlagBoolVar("sasl.handshake", "Only set this to false if using a non-Kafka SASL proxy, default is true.", true, "true", &opts.useSASLHandshake)
-	toFlagStringVar("sasl.username", "SASL user name.", "", &opts.saslUsername)
-	toFlagStringVar("sasl.password", "SASL user password.", "", &opts.saslPassword)
-	toFlagStringVar("sasl.mechanism", "The SASL SCRAM SHA algorithm sha256 or sha512 or gssapi as mechanism", "", &opts.saslMechanism)
-	toFlagStringVar("sasl.service-name", "Service name when using kerberos Auth", "", &opts.serviceName)
-	toFlagStringVar("sasl.kerberos-config-path", "Kerberos config path", "", &opts.kerberosConfigPath)
-	toFlagStringVar("sasl.realm", "Kerberos realm", "", &opts.realm)
-	toFlagStringVar("sasl.kerberos-auth-type", "Kerberos auth type. Either 'keytabAuth' or 'userAuth'", "", &opts.kerberosAuthType)
-	toFlagStringVar("sasl.keytab-path", "Kerberos keytab file path", "", &opts.keyTabPath)
-	toFlagBoolVar("sasl.disable-PA-FX-FAST", "Configure the Kerberos client to not use PA_FX_FAST, default is false.", false, "false", &opts.saslDisablePAFXFast)
-	toFlagBoolVar("tls.enabled", "Connect to Kafka using TLS, default is false.", false, "false", &opts.useTLS)
-	toFlagStringVar("tls.server-name", "Used to verify the hostname on the returned certificates unless tls.insecure-skip-tls-verify is given. The kafka server's name should be given.", "", &opts.tlsServerName)
-	toFlagStringVar("tls.ca-file", "The optional certificate authority file for Kafka TLS client authentication.", "", &opts.tlsCAFile)
-	toFlagStringVar("tls.cert-file", "The optional certificate file for Kafka client authentication.", "", &opts.tlsCertFile)
-	toFlagStringVar("tls.key-file", "The optional key file for Kafka client authentication.", "", &opts.tlsKeyFile)
-	toFlagBoolVar("server.tls.enabled", "Enable TLS for web server, default is false.", false, "false", &opts.serverUseTLS)
-	toFlagBoolVar("server.tls.mutual-auth-enabled", "Enable TLS client mutual authentication, default is false.", false, "false", &opts.serverMutualAuthEnabled)
-	toFlagStringVar("server.tls.ca-file", "The certificate authority file for the web server.", "", &opts.serverTlsCAFile)
-	toFlagStringVar("server.tls.cert-file", "The certificate file for the web server.", "", &opts.serverTlsCertFile)
-	toFlagStringVar("server.tls.key-file", "The key file for the web server.", "", &opts.serverTlsKeyFile)
-	toFlagBoolVar("tls.insecure-skip-tls-verify", "If true, the server's certificate will not be checked for validity. This will make your HTTPS connections insecure. Default is false", false, "false", &opts.tlsInsecureSkipTLSVerify)
-	toFlagStringVar("kafka.version", "Kafka broker version", sarama.V2_0_0_0.String(), &opts.kafkaVersion)
-	toFlagBoolVar("use.consumelag.zookeeper", "if you need to use a group from zookeeper, default is false", false, "false", &opts.useZooKeeperLag)
-	toFlagStringsVar("zookeeper.server", "Address (hosts) of zookeeper server.", "localhost:2181", &opts.uriZookeeper)
-	toFlagStringVar("kafka.labels", "Kafka cluster name", "", &opts.labels)
-	toFlagStringVar("refresh.metadata", "Metadata refresh interval", "30s", &opts.metadataRefreshInterval)
-	toFlagBoolVar("offset.show-all", "Whether show the offset/lag for all consumer group, otherwise, only show connected consumer groups, default is true", true, "true", &opts.offsetShowAll)
-	toFlagBoolVar("concurrent.enable", "If true, all scrapes will trigger kafka operations otherwise, they will share results. WARN: This should be disabled on large clusters. Default is false", false, "false", &opts.allowConcurrent)
-	toFlagIntVar("topic.workers", "Number of topic workers", 100, "100", &opts.topicWorkers)
-	toFlagBoolVar("kafka.allow-auto-topic-creation", "If true, the broker may auto-create topics that we requested which do not already exist, default is false.", false, "false", &opts.allowAutoTopicCreation)
-	toFlagIntVar("verbosity", "Verbosity log level", 0, "0", &opts.verbosityLogLevel)
+	toFlagStringsVar("kafka.server", "Address (host:port) of Kafka server.", "kafka:9092", &opts.Uri)
+	toFlagBoolVar("sasl.enabled", "Connect using SASL/PLAIN, default is false.", false, "false", &opts.UseSASL)
+	toFlagBoolVar("sasl.handshake", "Only set this to false if using a non-Kafka SASL proxy, default is true.", true, "true", &opts.UseSASLHandshake)
+	toFlagStringVar("sasl.username", "SASL user name.", "", &opts.SaslUsername)
+	toFlagStringVar("sasl.password", "SASL user password.", "", &opts.SaslPassword)
+	toFlagStringVar("sasl.mechanism", "The SASL SCRAM SHA algorithm sha256 or sha512 or gssapi as mechanism", "", &opts.SaslMechanism)
+	toFlagStringVar("sasl.service-name", "Service name when using kerberos Auth", "", &opts.ServiceName)
+	toFlagStringVar("sasl.kerberos-config-path", "Kerberos config path", "", &opts.KerberosConfigPath)
+	toFlagStringVar("sasl.realm", "Kerberos realm", "", &opts.Realm)
+	toFlagStringVar("sasl.kerberos-auth-type", "Kerberos auth type. Either 'keytabAuth' or 'userAuth'", "", &opts.KerberosAuthType)
+	toFlagStringVar("sasl.keytab-path", "Kerberos keytab file path", "", &opts.KeyTabPath)
+	toFlagBoolVar("sasl.disable-PA-FX-FAST", "Configure the Kerberos client to not use PA_FX_FAST, default is false.", false, "false", &opts.SaslDisablePAFXFast)
+	toFlagBoolVar("tls.enabled", "Connect to Kafka using TLS, default is false.", false, "false", &opts.UseTLS)
+	toFlagStringVar("tls.server-name", "Used to verify the hostname on the returned certificates unless tls.insecure-skip-tls-verify is given. The kafka server's name should be given.", "", &opts.TlsServerName)
+	toFlagStringVar("tls.ca-file", "The optional certificate authority file for Kafka TLS client authentication.", "", &opts.TlsCAFile)
+	toFlagStringVar("tls.cert-file", "The optional certificate file for Kafka client authentication.", "", &opts.TlsCertFile)
+	toFlagStringVar("tls.key-file", "The optional key file for Kafka client authentication.", "", &opts.TlsKeyFile)
+	toFlagBoolVar("server.tls.enabled", "Enable TLS for web server, default is false.", false, "false", &opts.ServerUseTLS)
+	toFlagBoolVar("server.tls.mutual-auth-enabled", "Enable TLS client mutual authentication, default is false.", false, "false", &opts.ServerMutualAuthEnabled)
+	toFlagStringVar("server.tls.ca-file", "The certificate authority file for the web server.", "", &opts.ServerTlsCAFile)
+	toFlagStringVar("server.tls.cert-file", "The certificate file for the web server.", "", &opts.ServerTlsCertFile)
+	toFlagStringVar("server.tls.key-file", "The key file for the web server.", "", &opts.ServerTlsKeyFile)
+	toFlagBoolVar("tls.insecure-skip-tls-verify", "If true, the server's certificate will not be checked for validity. This will make your HTTPS connections insecure. Default is false", false, "false", &opts.TlsInsecureSkipTLSVerify)
+	toFlagStringVar("kafka.version", "Kafka broker version", sarama.V2_0_0_0.String(), &opts.KafkaVersion)
+	toFlagBoolVar("use.consumelag.zookeeper", "if you need to use a group from zookeeper, default is false", false, "false", &opts.UseZooKeeperLag)
+	toFlagStringsVar("zookeeper.server", "Address (hosts) of zookeeper server.", "localhost:2181", &opts.UriZookeeper)
+	toFlagStringVar("kafka.labels", "Kafka cluster name", "", &opts.Labels)
+	toFlagStringVar("refresh.metadata", "Metadata refresh interval", "30s", &opts.MetadataRefreshInterval)
+	toFlagBoolVar("offset.show-all", "Whether show the offset/lag for all consumer group, otherwise, only show connected consumer groups, default is true", true, "true", &opts.OffsetShowAll)
+	toFlagBoolVar("concurrent.enable", "If true, all scrapes will trigger kafka operations otherwise, they will share results. WARN: This should be disabled on large clusters. Default is false", false, "false", &opts.AllowConcurrent)
+	toFlagIntVar("topic.workers", "Number of topic workers", 100, "100", &opts.TopicWorkers)
+	toFlagBoolVar("kafka.allow-auto-topic-creation", "If true, the broker may auto-create topics that we requested which do not already exist, default is false.", false, "false", &opts.AllowAutoTopicCreation)
+	toFlagIntVar("verbosity", "Verbosity log level", 0, "0", &opts.VerbosityLogLevel)
 
 	plConfig := plog.Config{}
 	plogflag.AddFlags(kingpin.CommandLine, &plConfig)
@@ -758,8 +758,8 @@ func main() {
 	labels := make(map[string]string)
 
 	// Protect against empty labels
-	if opts.labels != "" {
-		for _, label := range strings.Split(opts.labels, ",") {
+	if opts.Labels != "" {
+		for _, label := range strings.Split(opts.Labels, ",") {
 			splitted := strings.Split(label, "=")
 			if len(splitted) >= 2 {
 				labels[splitted[0]] = splitted[1]
@@ -783,9 +783,9 @@ func setup(
 	if err := flag.Set("logtostderr", "true"); err != nil {
 		klog.Errorf("Error on setting logtostderr to true: %v", err)
 	}
-	err := flag.Set("v", strconv.Itoa(opts.verbosityLogLevel))
+	err := flag.Set("v", strconv.Itoa(opts.VerbosityLogLevel))
 	if err != nil {
-		klog.Errorf("Error on setting v to %v: %v", strconv.Itoa(opts.verbosityLogLevel), err)
+		klog.Errorf("Error on setting v to %v: %v", strconv.Itoa(opts.VerbosityLogLevel), err)
 	}
 	defer klog.Flush()
 
@@ -916,22 +916,22 @@ func setup(
 		}
 	})
 
-	if opts.serverUseTLS {
+	if opts.ServerUseTLS {
 		klog.V(INFO).Infoln("Listening on HTTPS", listenAddress)
 
-		_, err := CanReadCertAndKey(opts.serverTlsCertFile, opts.serverTlsKeyFile)
+		_, err := CanReadCertAndKey(opts.ServerTlsCertFile, opts.ServerTlsKeyFile)
 		if err != nil {
 			klog.Error("error reading server cert and key")
 		}
 
 		clientAuthType := tls.NoClientCert
-		if opts.serverMutualAuthEnabled {
+		if opts.ServerMutualAuthEnabled {
 			clientAuthType = tls.RequireAndVerifyClientCert
 		}
 
 		certPool := x509.NewCertPool()
-		if opts.serverTlsCAFile != "" {
-			if caCert, err := ioutil.ReadFile(opts.serverTlsCAFile); err == nil {
+		if opts.ServerTlsCAFile != "" {
+			if caCert, err := ioutil.ReadFile(opts.ServerTlsCAFile); err == nil {
 				certPool.AppendCertsFromPEM(caCert)
 			} else {
 				klog.Error("error reading server ca")
@@ -958,7 +958,7 @@ func setup(
 			Addr:      listenAddress,
 			TLSConfig: tlsConfig,
 		}
-		klog.Fatal(server.ListenAndServeTLS(opts.serverTlsCertFile, opts.serverTlsKeyFile))
+		klog.Fatal(server.ListenAndServeTLS(opts.ServerTlsCertFile, opts.ServerTlsKeyFile))
 	} else {
 		klog.V(INFO).Infoln("Listening on HTTP", listenAddress)
 		klog.Fatal(http.ListenAndServe(listenAddress, nil))

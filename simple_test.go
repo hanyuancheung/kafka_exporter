@@ -65,9 +65,9 @@ func execute(handler func(response *http.Response)) {
 
 func runServer() {
 	opts := KafkaOpts{}
-	opts.uri = bootstrap_servers
-	opts.uriZookeeper = []string{"localhost:2181"}
-	opts.kafkaVersion = sarama.V1_0_0_0.String()
-	opts.metadataRefreshInterval = "30s"
+	opts.Uri = bootstrap_servers
+	opts.UriZookeeper = []string{"localhost:2181"}
+	opts.KafkaVersion = sarama.V1_0_0_0.String()
+	opts.MetadataRefreshInterval = "30s"
 	setup("localhost:9304", "/metrics", ".*", ".*", false, opts, nil)
 }
