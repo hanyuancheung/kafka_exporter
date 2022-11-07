@@ -1,4 +1,4 @@
-package main
+package kafkaexporter
 
 import (
 	"crypto/sha256"
